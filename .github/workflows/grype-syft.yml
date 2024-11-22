@@ -1,0 +1,32 @@
+name: Grype and Syft Analysis
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v3
+      - name: Create and import image
+        run: |
+          ./scripts/create.sh
+          cat build/run.oci | docker import - test-image:latest
+
+      - name: Install Grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run Grype analysis
+        run: grype test-image:latest
+
+      - name: Run Syft analysis
+        run: syft test-image:latest
